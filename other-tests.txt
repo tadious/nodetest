@@ -1,0 +1,7 @@
+Other tests
+
+curl http://localhost:8888/ping
+wget http://localhost:8888/ping
+ab -n 500 -c 100 http://localhost:8888/ping
+
+Also downloaded HTTPRequester for firefox and made a number of posts and get requests to the node server
