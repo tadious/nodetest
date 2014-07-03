@@ -1,12 +1,15 @@
+<html>
 <head>
   <title>Post to NODE!!!!</title>
   <script type="text/javascript">
-    document.write("\<script src='http://code.jquery.com/jquery-latest.min.js' type='text/javascript'>\<\/script>");
+    document.write("\<script src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js' type='text/javascript'>\<\/script>");
 </script>
 </head>
 
 <body>
-  <input type="button" id="postToNode" value="Post to node"/>
+  <input type="button" id="postToNode" value="Post to node"/><br/><br/>
+  <input type="button" id="produceToRedis" value="Produce To Redis"/><br/><br/>
+  <input type="button" id="readFromRedis" value="Read From Redis"/><br/><br/>
   <br/>
   
   <script>
@@ -14,7 +17,7 @@
 	$("#postToNode").click(function(){
 		$.ajax(
 		{
-			url : "http://localhost:8888/ping",
+			url : "https://localhost:8888/ping",
 			type: "POST"
 		}).done(function(data, textStatus, jqXHR) 
 		{
@@ -24,6 +27,34 @@
 		{
 		});
 	});
+	
+	$("#produceToRedis").click(function(){
+		$.ajax(
+		{
+			url : "https://localhost:8888/toredis",
+			type: "POST"
+		}).done(function(data, textStatus, jqXHR) 
+		{
+			console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> : '+data);
+		}).fail(function(jqXHR, textStatus, errorThrown) 
+		{
+		});
+	});
+	
+	$("#readFromRedis").click(function(){
+		$.ajax(
+		{
+			url : "https://localhost:8888/fromredis",
+			type: "POST"
+		}).done(function(data, textStatus, jqXHR) 
+		{
+			console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> : '+data);
+		}).fail(function(jqXHR, textStatus, errorThrown) 
+		{
+		});
+	});
   </script>
 </body>
+</html>
+
 
