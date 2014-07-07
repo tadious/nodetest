@@ -16,26 +16,58 @@ function onRequest(request, response) {
 	request.on('end', function(){
 		var urlMatch = request.url.match(/^\/map\/(.*)/);
 		if(urlMatch) {
-			var key = urlMatch[1];
-			mapRequest(key, request.method, response, postedData);
+			request.mapKey = urlMatch[1];
+			request.postedData = postedData;
+			mapRequest(request, response);
 			return;
 		}
 		
 		//test for mongo db persist
 		urlMatch = request.url.match(/^\/persist\/(.*)/);
 		if(urlMatch) {
-			var key = urlMatch[1];
-			mapRequest(key, request.method, response, postedData);
+			request.persistKey = urlMatch[1];
+			request.postedData = postedData;
+			persistRequest(request, response);
 		}else {
 			response.writeHead(404, {"Content-Type": "plain/text"});
 			response.end();
 		}
 	});
-	
-	
+		
 }
 
-function mapRequest(key, method, response, postedData) {
+function persistRequest(request, response) {
+	var databaseUrl = "test";// "username:password@example.com/test"
+	var collections = ["users"];
+	var db = require("mongojs").connect(databaseUrl, collections);
+
+	if(request.method == 'POST') {
+		var userData = JSON.parse(request.postedData);
+		db.users.save({id:userData.id,name:userData.name,surname:userData.surname,sex:userData.sex}, function(err, saved){
+			if(err || !saved) {
+				response.writeHead(500, {"Content-Type": "plain/text"});
+				response.end("Error");
+			}else {
+				response.writeHead(201, {"Content-Type": "plain/text"});
+				response.end("Saved");
+			}
+		});
+	}else {
+		console.log(request.persistKey);
+		db.users.find({name:request.persistKey}, function(err, users){
+			if(err || !users) {
+				response.writeHead(200, {"Content-Type": "plain/text"});
+				response.end("No users found.");
+			}else {
+				console.log(users);
+				response.writeHead(200, {"Content-Type": "plain/text"});
+				response.end(JSON.stringify(users) + ' <<<<<<<<<<  USERS');
+			}
+		})
+	}
+}
+
+function mapRequest(request, response) {
 	var redis = require("redis"),
 	    client = redis.createClient();
 	
@@ -43,12 +75,12 @@ function mapRequest(key, method, response, postedData) {
 		console.log('Error in redis: ' + err);
 	});
 	
-	if(method == 'POST') {
-		client.hset(["map",key,postedData], function(err, reply) {
+	if(request.method == 'POST') {
+		client.hset(["map",request.mapKey,request.postedData], function(err, reply) {
 			if(err) {
 				throw err;
 			}else {
-				console.log("value=" + postedData);
+				console.log("value=" + request.postedData);
 				if(reply == 1) {
 					response.writeHead(201, {"Content-Type": "plain/text"});
 					response.end();
@@ -60,7 +92,7 @@ function mapRequest(key, method, response, postedData) {
 		});
 		
 	}else {
-		client.hget(["map",key], function(err, reply) {
+		client.hget(["map",request.mapKey], function(err, reply) {
 			if(err) {
 				throw err;
 			}else {
