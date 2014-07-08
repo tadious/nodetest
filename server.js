@@ -21,6 +21,15 @@ function onRequest(request, response) {
 			mapRequest(request, response);
 			return;
 		}
+
+		//test for postgres db persist
+		urlMatch = request.url.match(/^\/db\/(.*)/);
+		if(urlMatch) {
+			request.dbKey = urlMatch[1];
+			request.postedData = postedData;
+			postgresRequest(request, response);
+			return;
+		}
 		
 		//test for mongo db persist
 		urlMatch = request.url.match(/^\/persist\/(.*)/);
@@ -34,6 +43,45 @@ function onRequest(request, response) {
 		}
 	});
 		
+}
+
+function postgresRequest(request, response) {
+	var pg = require('pg');
+	var dbUrl = "tcp://postgres:crazylongpassword@localhost/postgres";
+
+	if (request.method == 'POST') {
+		var userData = JSON.parse(request.postedData);
+		pg.connect(dbUrl, function(err, client){
+			if (err || !client) {
+				response.writeHead(500, {"Content-Type": "plain/text"});
+				response.end("Could not connect to the databse: " + dbUrl);
+			}else {
+				client.query("CREATE TABLE users(id serial PRIMARY KEY,name varchar(50),surname varchar(50),sex varchar(10));");
+				client.query("INSERT INTO users(id, name, surname, sex) VALUES($1, $2, $3, $4)",[userData.id,userData.name,userData.surname,userData.sex]);
+				response.writeHead(200, {"Content-Type": "plain/text"});
+				response.end("Saved to the databse.");
+			}
+		});
+	}else {
+		pg.connect(dbUrl, function(err, client){
+			if (err || !client) {
+				response.writeHead(500, {"Content-Type": "plain/text"});
+				response.end("Could not connect to the databse: " + dbUrl);
+			}else {
+				var sql = "SELECT * FROM users;";
+				client.query(sql, function(err, result){
+					if (err || !result) {
+						response.writeHead(200, {"Content-Type": "plain/text"});
+						response.end("Error reading the database");
+					}else {
+						console.log(result.rows);
+						response.writeHead(200, {"Content-Type": "plain/text"});
+						response.end(JSON.stringify(result.rows) + '   :  '+result.rows.length + " users returned.");
+					}
+				});
+			}
+		});
+	}
 }
 
 function persistRequest(request, response) {
@@ -59,9 +107,8 @@ function persistRequest(request, response) {
 				response.writeHead(200, {"Content-Type": "plain/text"});
 				response.end("No users found.");
 			}else {
-				console.log(users);
 				response.writeHead(200, {"Content-Type": "plain/text"});
-				response.end(JSON.stringify(users) + ' <<<<<<<<<<  USERS');
+				response.end(JSON.stringify(users));
 			}
 		})
 	}
